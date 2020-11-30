@@ -38,11 +38,38 @@ def compute_point_cloud(imageNumber):
     R = extrinsics[:, :3]
     # t
     t = extrinsics[:, 3]
+    
+    height, width = depth.shape
+    
+    _gen_0 = np.zeros((4,4),dtype="float")
+    _gen_1 = np.zeros((4,4),dtype="float")
+    
+    _gen_0[0:3,0:3] = intrinsics
+    _gen_0[3][3] = 1
+    
+    _gen_1[0:3, 0:3] = R
+    _gen_1[3,0:3] = t
+    _gen_1[3][3] = 1
+    
+    _gen_2 = np.dot(_gen_0,_gen_1)
+    
+    inv = np.linalg.pinv(_gen_2)
+    
+    res = np.zeros((height, width), dtype="float")
+    
+    for i in range(height):
+        for j in range(width):
+            left = np.array([i, j, 1, 1/depth[i][j]])
+            res[0], res[1], res[2], b = depth[i][j] * np.dot(inv, left)
+            res[3] = rgb[i][j][0]
+            res[4] = rgb[i][j][1]
+            res[5] = rgb[i][j][2]
+    
 
 # YOUR IMPLEMENTATION CAN GO HERE:
 
 
-    return results
+    return res
 
 
 def plot_pointCloud(pc):
@@ -71,7 +98,7 @@ if __name__ == '__main__':
     for  imageNumber in  imageNumbers:
 
         # Part a)
-        pc = compute_point_cloud( imageNumber)
+        pc = compute_point_cloud(imageNumber)
         np.savetxt( imageNumber + 'pointCloud.txt', pc)
         plot_pointCloud(pc)
 
