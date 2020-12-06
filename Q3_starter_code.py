@@ -38,37 +38,18 @@ def compute_point_cloud(imageNumber):
     R = extrinsics[:, :3]
     # t
     t = extrinsics[:, 3]
-    
-    height, width = depth.shape
-    
-    _gen_0 = np.zeros((4,4),dtype="float")
-    _gen_1 = np.zeros((4,4),dtype="float")
-    
-    _gen_0[0:3,0:3] = intrinsics
-    _gen_0[3][3] = 1
-    
-    _gen_1[0:3, 0:3] = R
-    _gen_1[3,0:3] = t
-    _gen_1[3][3] = 1
-    
-    _gen_2 = np.dot(_gen_0,_gen_1)
-    
-    inv = np.linalg.pinv(_gen_2)
-    
-    res = np.zeros((height, width), dtype="float")
-    
-    for i in range(height):
-        for j in range(width):
-            left = np.array([i, j, 1, 1/depth[i][j]])
-            res[0], res[1], res[2], b = depth[i][j] * np.dot(inv, left)
-            res[3] = rgb[i][j][0]
-            res[4] = rgb[i][j][1]
-            res[5] = rgb[i][j][2]
-    
-
-# YOUR IMPLEMENTATION CAN GO HERE:
-
-
+    width, height = depth.shape
+    inverse_intrinsics = np.linalg.inv(intrinsics)
+    inverse_R = np.linalg.inv(R)
+    res = np.zeros((width*height,6), dtype="float")
+    for i in range(width):
+        for j in range(height):
+            homo = np.array([depth[i][j]*j, depth[i][j]*i, depth[i][j]])
+            cam = np.dot(inverse_intrinsics, homo)
+            world = np.dot(inverse_R, cam) - t
+            # Need to put - before y coordinate to achieve same with what have shown in demo
+            res[i*height+j, 0], res[i*height+j, 1], res[i*height+j, 2] = world[0], -world[1], world[2]
+            res[i*height+j, 3], res[i*height+j, 4], res[i*height+j, 5] = rgb[i][j][0], rgb[i][j][1], rgb[i][j][2]
     return res
 
 
